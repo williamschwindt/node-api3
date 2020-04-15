@@ -14,7 +14,7 @@ router.post('/', validateUser(), (req, res) => {
     })
 });
 
-router.post('/:id/posts', validatePost, validateUserId, (req, res) => {
+router.post('/:id/posts', validatePost, validateUserId, (req, res) => { 
   postDB.insert(req.body)
   .then(post => {
     return res.status(201).json(post)
