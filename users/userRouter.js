@@ -1,40 +1,87 @@
 const express = require('express');
 
 const router = express.Router();
-const db = require('./userDb');
+const userDB = require('./userDb');
+const postDB = require('../posts/postDb');
 
-router.post('/', (req, res) => {
-  // do your magic!
+router.post('/', validateUser(), (req, res) => {
+  userDB.insert(req.body)
+    .then(user => {
+      return res.status(201).json(user)
+    })
+    .catch(err => {
+      next(err)
+    })
 });
 
-router.post('/:id/posts', (req, res) => {
-  // do your magic!
+router.post('/:id/posts', validatePost, validateUserId, (req, res) => {
+  postDB.insert(req.body)
+  .then(post => {
+    return res.status(201).json(post)
+  })
+  .catch(err => {
+    next(err)
+  })
 });
 
 router.get('/', (req, res) => {
-  // do your magic!
+  userDB.get()
+    .then(users => {
+      return res.status(200).json(users)
+    })
+    .catch(err => {
+      next(err)
+    })
 });
 
-router.get('/:id', (req, res) => {
-  // do your magic!
+router.get('/:id', validateUserId, (req, res) => {
+  res.status(200).json(req.user)
 });
 
-router.get('/:id/posts', (req, res) => {
-  // do your magic!
+//
+//why is the error for 0 posts not working
+//
+router.get('/:id/posts', validateUserId, (req, res) => {
+  userDB.getUserPosts(req.params.id)
+    .then(posts => {
+      if(posts.lenth === 0) {
+        return res.status(404).json({
+          message: 'no posts found'
+        })
+      }
+      else {
+        return res.status(200).json(posts)
+      }
+    })
+    .catch(err => {
+      next(err)
+    })
 });
 
-router.delete('/:id', (req, res) => {
-  // do your magic!
+router.delete('/:id', validateUserId, (req, res) => {
+  userDB.remove(req.user.id)
+    .then(() => {
+      return res.status(204).end()
+    })
+    .catch(err => {
+      next(err)
+    })
 });
 
-router.put('/:id', (req, res) => {
-  // do your magic!
+router.put('/:id', validateUser(), validateUserId, (req, res) => {
+  userDB.update(req.user.id, req.body)
+    .then(user => {
+      return res.status(200).json(user)
+    })
+    .catch(err => {
+      next(err)
+    })
 });
 
 //custom middleware
 
 function validateUserId(req, res, next) {
-  db.getById(req.params.id)
+  userDB.getById(req.params.id)
     .then(user => {
       if(user) {
         req.user = user;
@@ -51,29 +98,26 @@ function validateUserId(req, res, next) {
     })
 }
 
-function validateUser(req, res, next) {
-  if(!req.body) {
-    return res.status(400).json({
-      message: 'missing user data'
-    })
+function validateUser() {
+  return (req, res, next) => {
+    if(!req.body.name) {
+      return res.status(400).json({
+        message: 'missing user data'
+      })
+    }
+    next()
   }
-  if(!req.body.name) {
-    return res.status(400).json({
-      message: 'missing name field'
-    })
-  }
-  next()
 }
 
 function validatePost(req, res, next) {
-  if(!req.body) {
-    return res.status(400).json({
-      message: 'missing post data'
-    })
-  }
   if(!req.body.text) {
     return res.status(400).json({
       message: 'missing text field'
+    })
+  }
+  if(!req.body.user_id) {
+    return res.status(400).json({
+      message: 'missing user_id field'
     })
   }
   next()
