@@ -1,10 +1,11 @@
+const port = process.env.PORT || 8000;
+
 const express = require('express');
 const userRouter = require('./users/userRouter');
 const postRouter = require('./posts/postRouter');
 const logger = require('./middleware/logger');
 
 const server = express();
-const port = 8000;
 
 server.use(express.json());
 server.use(logger());
